@@ -1,6 +1,7 @@
 //
-// author: ciro ceissler
-// email : ciro.ceissler at gmail.com
+// author      : ciro ceissler
+// email       : ciro.ceissler at gmail.com
+// description : hello world
 //
 
 #include <stdio.h>
@@ -24,7 +25,7 @@ int main(int argc, char* argv[]) {
   hello();
 
   return 0;
-}
+}  /* main */
 
 void hello(void) {
 #ifdef _OPENMP
@@ -37,3 +38,5 @@ void hello(void) {
 
   printf("Hello from thread %d of %d\n", my_rank, thread_count);
 }  /* hello */
+
+// taf!
