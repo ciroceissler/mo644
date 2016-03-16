@@ -169,6 +169,6 @@ double parallel_trap(double a, double b, int n) {
   approx = h*approx;
 
   return approx;
-}
+} /* parallel_trap */
 
 // taf!
