@@ -1,16 +1,37 @@
+//
+// name : Ciro Ceissler
+// email: ciro.ceissler@gmail.com
+// RA   : RA108786
+//
+// description: T3
+//
+
 #include <stdio.h>
 #include <float.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+
+// NOTES(ciroceissler): include pthread header
 #include <pthread.h>
 
+// NOTES(ciroceissler): auxiliar macro used at 'parallel' count
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
+// NOTES(ciroceissler): global thread variables
+int n;
+int nval;
+int *vet;
 int thread_count;
 
-int n, nval, *vet, size;
-double h, *val, max, min;
-long j_max;
+double h;
+double *val; 
+double max;
+double min;
+
+// NOTES(ciroceissler): divide bins calculation in a homonogeneous way among all threads
+long step_bins;
 
 /* funcao que calcula o minimo valor em um vetor */
 double min_val(double * vet,int nval) {
@@ -43,69 +64,64 @@ double max_val(double * vet, int nval) {
 }
 
 /* conta quantos valores no vetor estao entre o minimo e o maximo passados como parametros */
-/* int * count(double min, double max, int * vet, int nbins, double h, double * val, int nval) { */
-/* 	int i, j, count; */
-/* 	double min_t, max_t; */
-/*  */
-/* 	for(j=0;j<nbins;j++) { */
-/* 		count = 0; */
-/* 		min_t = min + j*h; */
-/* 		max_t = min + (j+1)*h; */
-/* 		for(i=0;i<nval;i++) { */
-/* 			if(val[i] <= max_t && val[i] > min_t) { */
-/* 				count++; */
-/* 			} */
-/* 		} */
-/*  */
-/* 		vet[j] = count; */
-/* 	} */
-/*  */
-/* 	return vet; */
-/* } */
-
+// NOTES(ciroceissler): parallel count
 void* count(void* args) {
-	int i, count;
-  long j;
-	double min_t, max_t;
+  int i; 
+  int count;
 
-  j = (long) args;
+  long j; 
+  long thread;
 
-  count = 0;
-  min_t = min + j*h;
-  max_t = min + (j+1)*h;
+  double min_t; 
+  double max_t;
 
-  for(i=0; i < nval; i++) {
-    if(val[i] <= max_t && val[i] > min_t) {
-      count++;
+  // NOTES(ciroceissler): take only thread number as an argument
+  thread = (long) args;
+
+  // NOTES(ciroceissler): calculate for specific range of bins, divide early among threads.
+  // NOTES(ciroceissler): MIN macro avoid last thread calculate inexistent itens.
+  for(j = thread*step_bins; j < MIN((thread*step_bins) + step_bins, n); j++) {
+    count = 0;
+    min_t = min + j*h;
+    max_t = min + (j+1)*h;
+
+    for(i=0; i < nval; i++) {
+      if(val[i] <= max_t && val[i] > min_t) {
+        count++;
+      }
     }
-  }
 
-  vet[j] = count;
+    vet[j] = count;
+  }
 
   return NULL;
 }
 
 int main(int argc, char * argv[]) {
-	/* int n, nval, i, *vet, size; */
-	/* double h, *val, max, min; */
   int i;
+
 	long unsigned int duracao;
-	struct timeval start, end;
+
+	struct timeval start; 
+  struct timeval end;
 
   long thread;
 
   pthread_t* thread_handles;
 
-	scanf("%d",&size);
+  // NOTES(ciroceissler): get number of threads
+	scanf("%d",&thread_count);
 
-  thread_count = size;
-
+  // NOTES(ciroceissler): allocate storage to thread-specific information
   thread_handles = malloc (thread_count*sizeof(pthread_t));
 
 	/* entrada do numero de dados */
 	scanf("%d",&nval);
 	/* numero de barras do histograma a serem calculadas */
 	scanf("%d",&n);
+
+  // NOTES(ciroceissler): divide number of bins among all threads.
+  step_bins = ceil(n*1.0/thread_count*1.0);
 
 	/* vetor com os dados */
 	val = (double *)malloc(nval*sizeof(double));
@@ -126,15 +142,16 @@ int main(int argc, char * argv[]) {
 	gettimeofday(&start, NULL);
 
 	/* chama a funcao */
+
+  // NOTES(ciroceissler): parallel function call with pthreads
   for (thread = 0; thread < thread_count; thread++) {
     pthread_create(&thread_handles[thread], NULL, count, (void*) thread);
   }
 
+  // NOTES(ciroceissler): wait all threads complete
   for (thread = 0; thread < thread_count; thread++) {
     pthread_join(thread_handles[thread], NULL);
   }
-
-	/* vet = count(min, max, vet, n, h, val, nval); */
 
 	gettimeofday(&end, NULL);
 
