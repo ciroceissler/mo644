@@ -11,7 +11,7 @@
 #include<math.h>
 #include <sys/time.h>
 
-// NOTES(ciroceissler): include pthread header
+// NOTES(ciroceissler): pthread header
 #include <pthread.h>
 
 int rand_r(unsigned int *seedp);
@@ -19,19 +19,17 @@ int rand_r(unsigned int *seedp);
 // NOTES(ciroceissler): auxiliar macro used at 'parallel' monte_carlo_pi
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
-// NOTES(ciroceissler): global thread variables
+// NOTES(ciroceissler): variaveis globais para thread
 int thread_count;
 unsigned int n;
-
-// NOTES(ciroceissler): divide bins calculation in a homonogeneous way among all threads
-long step_bins;
-
-/* long long unsigned int* in_array; */
 long long unsigned int in_global = 0;
 
+// NOTES(ciroceissler): divide de uma maneira homogenea entre as threads
+long step_bins;
+
+// NOTES(ciroceissler): lock para in_global nao ter concorrencia
 pthread_mutex_t lock;
 
-/* long long unsigned int monte_carlo_pi(unsigned int n) { */
 // NOTES(ciroceissler): parallel monte_carlo_pi
 void* monte_carlo_pi(void* args) {
 	long long unsigned int in = 0, i;
@@ -41,11 +39,11 @@ void* monte_carlo_pi(void* args) {
 
   unsigned int seed = time(NULL);
 
-  // NOTES(ciroceissler): take only thread number as an argument
+  // NOTES(ciroceissler): pegue o numero da thread
   thread = (long) args;
 
-  // NOTES(ciroceissler): calculate for specific range of bins, divide early among threads.
-  // NOTES(ciroceissler): MIN macro avoid last thread calculate inexistent itens.
+  // NOTES(ciroceissler): apenas um range especifico
+  // NOTES(ciroceissler): MIN macro evita a ultima thread calcular passos inexistentes
   for(i = thread*step_bins; i < MIN((thread*step_bins) + step_bins, n); i++) {
 		x = ((rand_r(&seed) % 1000000)/500000.0)-1;
 		y = ((rand_r(&seed) % 1000000)/500000.0)-1;
@@ -71,25 +69,25 @@ int main(void) {
 
   pthread_t* thread_handles;
 
-  // NOTES(ciroceissler): get number of threads
+  // NOTES(ciroceissler): pegar o numero de threads
 	scanf("%d %u",&thread_count, &n);
 
   // NOTES(ciroceissler): allocate storage to thread-specific information
   thread_handles = malloc (thread_count*sizeof(pthread_t));
 
-  // NOTES(ciroceissler): divide number of bins among all threads.
+  // NOTES(ciroceissler): divide as atividades entre as threads
   step_bins = ceil(n*1.0/thread_count*1.0);
 
 	srand (time(NULL));
 
 	gettimeofday(&start, NULL);
 
-  // NOTES(ciroceissler): parallel function call with pthreads
+  // NOTES(ciroceissler): chamada da funcao com pthreads
   for (thread = 0; thread < thread_count; thread++) {
     pthread_create(&thread_handles[thread], NULL, monte_carlo_pi, (void*) thread);
   }
 
-  // NOTES(ciroceissler): wait all threads complete
+  // NOTES(ciroceissler): espere todas as threads terminarem
   for (thread = 0; thread < thread_count; thread++) {
     pthread_join(thread_handles[thread], NULL);
   }
